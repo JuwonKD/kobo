@@ -62,23 +62,26 @@ impl Scanner {
                     ('>',false) => TokenType::Greater,
                     ('<',true) => TokenType::LessEqual,
                     ('<',false) => TokenType::Less,
-                    self.add(t);
-                }
-                ' ' | '\r' | '\t' =>{}
-                '\n' => self.line += 1,
-                '/' => {
-                    if self.matches('/'){
-                        while !self.at_end() && self.peek() != '\n' {
-                            self.advance();
-                        }
-                    } else{
-                        self.add(TokenType::Slash);
-                    }
-                }
-                c if c.is_ascii_alphabet() || c== '_' => self.identifier(),
-                _ => {}
+                    _ => unreachable!(),
+                };
+                self.add(t);
             }
+
+            ' ' | '\r' | '\t' =>{}
+            '\n' => self.line += 1,
+            '/' => {
+                if self.matches('/'){
+                    while !self.at_end() && self.peek() != '\n' {
+                        self.advance();
+                    }
+                } else{
+                     self.add(TokenType::Slash);
+                }
+            }
+            c if c.is_ascii_alphabetic() || c== '_' => self.identifier(),
+            _ => {}
         }
+    
         
     }
 
@@ -91,9 +94,9 @@ impl Scanner {
     }
 
     fn identifier(&mut self) {
-        while self.peek().is_ascii_alphanumeric() || self.peek() == _ {
+        while self.peek().is_ascii_alphanumeric() || self.peek() == '_' {
             self.advance();
-        };
+        }
 
         let word: String = self.src[self.start..self.current].iter().collect();
 
