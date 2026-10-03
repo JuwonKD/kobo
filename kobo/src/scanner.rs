@@ -26,34 +26,78 @@ struct Scanner {
 
 impl Scanner {
     fn run(&mut self) {
-        // TODO(you): drive the scan: read one token at a time until the source runs out, then
-        //            add the EOF token. Spec 6.1 says which line EOF carries.
-        todo!("run")
+        while !self.at_end() {
+            self.start = self.current;
+            self.scan_token();
+        }
+        self.start=self.current;
+        self.line = match self.tokens.last() {
+            Some(last) => last.line,
+            None => 1,
+        };
+        self.add(TokenType::Eof)
+        
     }
 
     fn scan_token(&mut self) {
-        // TODO(you): recognise one token. Spec 1.2 lists every token type, 1.1 covers
-        //            whitespace and comments, and an unrecognised character is 'Character is
-        //            not part of any token.' (5.1).
-        todo!("scan_token")
+        let c = self.advance();
+        match c {
+            '(' => self.add(TokenType::LParen),
+            ')' => self.add(TokenType::RParen),
+            '{' => self.add(TokenType::LBrace),
+            '}' => self.add(TokenType::RBrace),
+            ',' => self.add(TokenType::Comma),
+            ';' => self.add(TokenType::Semicolon),
+            '+' => self.add(TokenType::Plus),
+            '-' => self.add(TokenType::Minus),
+            '*' => self.add(TokenType::Star),
+            '!' | '=' | '>' | '<' => {
+                let two = self.matches('=');
+                let t = match (c,two) {
+                    ('!',true) => TokenType::BangEqual,
+                    ('!',false) => TokenType::Bang,
+                    ('=',true) => TokenType::EqualEqual,
+                    ('=',false) => TokenType::Equal,
+                    ('>',true) => TokenType::GreaterEqual,
+                    ('>',false) => TokenType::Greater,
+                    ('<',true) => TokenType::LessEqual,
+                    ('<',false) => TokenType::Less,
+                    self.add(t);
+                }
+                ' ' | '\r' | '\t' =>{}
+                '\n' => self.line += 1,
+                '/' => {
+                    if self.matches('/'){
+                        while !self.at_end() && self.peek() != '\n' {
+                            self.advance();
+                        }
+                    } else{
+                        self.add(TokenType::Slash);
+                    }
+                }
+                c if c.is_ascii_alphabet() || c== '_' => self.identifier(),
+                _ => {}
+            }
+        }
+        
     }
 
     fn string(&mut self) {
-        // TODO(you): scan a string literal. A string may span lines (1.5); an unterminated one
-        //            is reported at the line it opened on (5.1).
-        todo!("string")
+        
     }
 
     fn number(&mut self) {
-        // TODO(you): scan a number literal: digits, then a fractional part only when a digit
-        //            follows the dot (1.4).
-        todo!("number")
+        
     }
 
     fn identifier(&mut self) {
-        // TODO(you): scan an identifier, then decide whether it is a keyword; keyword() in
-        //            token.rs does the lookup (1.2, 1.3).
-        todo!("identifier")
+        while self.peek().is_ascii_alphanumeric() || self.peek() == _ {
+            self.advance();
+        };
+
+        let word: String = self.src[self.start..self.current].iter().collect();
+
+        self.add(keyword(&word).unwrap_or(TokenType::Identifier));
     }
 
     // --- primitives ---------------------------------------------------------------
