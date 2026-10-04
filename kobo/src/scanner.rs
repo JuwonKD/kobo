@@ -86,7 +86,21 @@ impl Scanner {
     }
 
     fn string(&mut self) {
-        
+        while self.peek() != '"' && !self.at_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+
+            self.advance();
+        }
+
+        if self.at_end() {
+            self.error(self.line, "Unterminated string.");
+            return;
+        }
+
+        self.advance();
+        self.add(TokenType::String);
     }
 
     fn number(&mut self) {
