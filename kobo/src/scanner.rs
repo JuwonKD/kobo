@@ -91,6 +91,8 @@ impl Scanner {
     }
 
     fn string(&mut self) {
+        let start_line = self.line;
+
         while self.peek() != '"' && !self.at_end() {
             if self.peek() == '\n' {
                 self.line += 1;
@@ -100,7 +102,7 @@ impl Scanner {
         }
 
         if self.at_end() {
-            self.error(self.line, "String is never closed.");
+            self.error(start_line, "String is never closed.");
             return;
         }
 
