@@ -78,8 +78,13 @@ impl Scanner {
                      self.add(TokenType::Slash);
                 }
             }
-            c if c.is_ascii_alphabetic() || c== '_' => self.identifier(),
-            _ => {}
+            '"' => self.string(),
+
+            c if c.is_ascii_digit() => self.number(),
+
+            c if c.is_ascii_alphabetic() || c == '_' => self.identifier(),
+
+            _ => self.error(self.line, "Character is not part of any token."),
         }
     
         
@@ -95,16 +100,28 @@ impl Scanner {
         }
 
         if self.at_end() {
-            self.error(self.line, "Unterminated string.");
+            self.error(self.line, "String is never closed.");
             return;
         }
 
         self.advance();
-        self.add(TokenType::String);
+        self.add(TokenType::Str);
     }
 
     fn number(&mut self) {
-        
+        while self.peek().is_ascii_digit() {
+            self.advance();
+        }
+
+        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
+            self.advance();
+
+            while self.peek().is_ascii_digit() {
+                self.advance();
+            }
+        }
+
+        self.add(TokenType::Number);
     }
 
     fn identifier(&mut self) {
