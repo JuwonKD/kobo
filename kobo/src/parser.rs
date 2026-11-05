@@ -393,6 +393,16 @@ impl Parser {
             if self.previous().kind == TokenType::Semicolon {
                 return;
             }
+
+            match self.peek().kind {
+                TokenType::Fun
+                | TokenType::Var
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => {}
+            }
         }
     }
 
