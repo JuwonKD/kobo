@@ -45,13 +45,11 @@ impl Parser {
     // --- declarations and statements ------------------------------------------------
 
     fn declaration(&mut self) -> Parsed<Stmt> {
-        if self.matches(&[TokenType::Fun]) {
-            self.fun_declaration()
-        } else if self.matches(&[TokenType::Var]) {
-            self.var_declaration()
-        } else {
-            self.statement()
+        if self.matches(&[TokenType::Var]) {
+            return self.var_declaration();
         }
+
+        self.statement()
     }
 
     fn fun_declaration(&mut self) -> Parsed<Stmt> {
@@ -86,16 +84,22 @@ impl Parser {
     }
 
     fn var_declaration(&mut self) -> Parsed<Stmt> {
-        let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
+        let name = self.consume(
+            TokenType::Identifier,
+            "Expect variable name."
+        )?;
+
         let initialiser = if self.matches(&[TokenType::Equal]) {
             Some(self.expression()?)
         } else {
             None
         };
+
         self.consume(
             TokenType::Semicolon,
-            "Expect ';' after variable declaration.",
+            "Expect ';' after variable declaration."
         )?;
+
         Ok(Stmt::Var {
             name,
             initialiser,
@@ -113,22 +117,32 @@ impl Parser {
     fn statement_inner(&mut self) -> Parsed<Stmt> {
         if self.matches(&[TokenType::Print]) {
             let value = self.expression()?;
-            self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
-            Ok(Stmt::Print(value))
-        } else if self.matches(&[TokenType::If]) {
-            self.if_statement()
-        } else if self.matches(&[TokenType::While]) {
-            self.while_statement()
-        } else if self.matches(&[TokenType::Return]) {
-            self.return_statement()
-        } else if self.matches(&[TokenType::LBrace]) {
-            let body = self.block()?;
-            Ok(Stmt::Block { body, locals: 0 })
-        } else {
-            let expr = self.expression()?;
-            self.consume(TokenType::Semicolon, "Expect ';' after expression.")?;
-            Ok(Stmt::Expression(expr))
+
+            self.consume(
+                TokenType::Semicolon,
+                "Expect ';' after value."
+            )?;
+
+            return Ok(Stmt::Print(value));
         }
+
+        if self.matches(&[TokenType::LBrace]) {
+            let body = self.block()?;
+
+            return Ok(Stmt::Block {
+                body,
+                locals: 0,
+            });
+        }
+
+        let expr = self.expression()?;
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after expression."
+        )?;
+
+        Ok(Stmt::Expression(expr))
     }
 
     fn return_statement(&mut self) -> Parsed<Stmt> {
@@ -169,12 +183,21 @@ impl Parser {
     /// The `{` is already consumed. Declarations, not statements: a block is where a
     /// `var` most often appears, and the whole point of one is that the name dies at `}`.
     fn block(&mut self) -> Parsed<Vec<Stmt>> {
-        let mut stmts = Vec::new();
+        let mut statements = Vec::new();
+
         while !self.check(TokenType::RBrace) && !self.at_end() {
-            stmts.push(self.declaration()?);
+            match self.declaration() {
+                Ok(statement) => statements.push(statement),
+                Err(()) => self.synchronise(),
+            }
         }
-        self.consume(TokenType::RBrace, "Expect '}' after block.")?;
-        Ok(stmts)
+
+        self.consume(
+            TokenType::RBrace,
+            "Expect '}' after block."
+        )?;
+
+        Ok(statements)
     }
 
     // --- expressions, lowest precedence first --------------------------------------
